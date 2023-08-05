@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Install Dialog dependency
-sudo apt install dialog
+# install dialog package
+sudo apt install dialog -y
 
 # Function to generate and show menu types/items
 show_menu(){
@@ -124,6 +124,7 @@ server {
   }
 }
 EOF
+        
         sudo mv ~/odoo /etc/nginx/sites-available/$WEBSITE_NAME
         sudo ln -s /etc/nginx/sites-available/$WEBSITE_NAME /etc/nginx/sites-enabled/$WEBSITE_NAME
         sudo rm /etc/nginx/sites-enabled/default
@@ -131,7 +132,7 @@ EOF
         sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_USER}.conf"
     fi
     
-    if [ $INSTALL_NGINX = "True" ] && [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ]  && [ $WEBSITE_NAME != "_" ];then
+    if [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ]  && [ $WEBSITE_NAME != "_" ];then
         sudo apt-get update -y
         sudo apt install snapd -y
         sudo snap install core; snap refresh core
@@ -177,7 +178,32 @@ install_enterprise_dependencies() {
     sudo npm install -g less-plugin-clean-css
 }
 
+print_specification() {
+    echo "Odoo Server Specifications:"
+    echo "Port: $OE_PORT"
+    echo "User service: $OE_USER"
+    echo "Configuraton file location: /etc/${OE_USER}.conf"
+    echo "Logfile location: /var/log/odoo/$OE_USER.log"
+    echo "User PostgreSQL: $OE_USER"
+    echo "Odoo Source location: $OE_HOME/$OE_USER"
+    echo "Custom Addons location: $OE_HOME/custom_module/"
+    echo "Master Password (database): $OE_SUPERADMIN"
+    echo "Start Odoo service: sudo service $OE_USER start"
+    echo "Stop Odoo service: sudo service $OE_USER stop"
+    echo "Restart Odoo service: sudo service $OE_USER restart"
+    echo "Status Odoo service: sudo service $OE_USER status"
+    if [ $ENABLE_SSL = "True" ]; then
+        echo "Nginx configuration file: /etc/nginx/sites-available/$WEBSITE_NAME"
+    fi
+}
+
 odoo_install(){
+    #--------------------------------------------------
+    # Update Daemon configuration
+    #--------------------------------------------------
+    sed "s/#\$nrconf{restart} = 'i'/\$nrconf{restart} = 'a'/" /etc/needrestart/needrestart.conf > ~/needrestart
+    sudo mv ~/needrestart /etc/needrestart/needrestart.conf
+    
     #--------------------------------------------------
     # Update Server
     #--------------------------------------------------
@@ -268,6 +294,7 @@ odoo_install(){
     sudo chown $OE_USER:$OE_USER $OE_HOME
     
     # ---- Create server config file ----
+    sudo rm -f /etc/${OE_USER}.conf
     sudo touch /etc/${OE_USER}.conf
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_USER}.conf"
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_USER}.conf"
@@ -321,23 +348,11 @@ EOF
     echo -e "* Starting Odoo Service"
     sudo su root -c "service $OE_USER start"
     echo "-----------------------------------------------------------"
-    echo "Done! The Odoo server is up and running. Specifications:"
-    echo "Port: $OE_PORT"
-    echo "User service: $OE_USER"
-    echo "Configuraton file location: /etc/${OE_USER}.conf"
-    echo "Logfile location: /var/log/odoo/$OE_USER"
-    echo "User PostgreSQL: $OE_USER"
-    echo "Code location: $OE_USER"
-    echo "Addons folder: $OE_USER/custom_module/"
-    echo "Password superadmin (database): $OE_SUPERADMIN"
-    echo "Start Odoo service: sudo service $OE_USER start"
-    echo "Stop Odoo service: sudo service $OE_USER stop"
-    echo "Restart Odoo service: sudo service $OE_USER restart"
-    echo "Status Odoo service: sudo service $OE_USER status"
-    if [ $ENABLE_SSL = "True" ]; then
-        echo "Nginx configuration file: /etc/nginx/sites-available/$WEBSITE_NAME"
-    fi
+    echo "Done! The Odoo server is up and running."
+    print_specification | tee $OE_HOME/server.info
     echo "-----------------------------------------------------------"
+    
+    echo "Server Specifications saved to $OE_HOME/server.info"
 }
 
 ODOO_INSTALL="True"
