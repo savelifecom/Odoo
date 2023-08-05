@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Install Dialog dependency
+sudo apt install dialog
+
 # Function to generate and show menu types/items
 show_menu(){
     # Params for menu creation
