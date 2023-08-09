@@ -151,7 +151,7 @@ EOF
 
 install_enterprise_dependencies() {
     source $OE_HOME/$OE_USER-venv/bin/activate
-    sudo pip3 install psycopg2-binary pdfminer.six -y
+    sudo pip3 install psycopg2-binary pdfminer.six
     sudo ln -s /usr/bin/nodejs /usr/bin/node
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
@@ -172,8 +172,8 @@ install_enterprise_dependencies() {
         done
     fi
     
-    sudo pip3 install num2words ofxparse dbfread ebaysdk firebase_admin -y
-    sudo pip3 install pyopenssl==22.1.0 -y
+    sudo pip3 install num2words ofxparse dbfread ebaysdk firebase_admin
+    sudo pip3 install pyopenssl==22.1.0
     sudo npm install -g less
     sudo npm install -g less-plugin-clean-css
 }
