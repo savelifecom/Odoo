@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # install dialog package
-sudo apt install dialog -y
+sudo apt-get update
+sudo apt-get install dialog -y
 
 # Function to generate and show menu types/items
-show_menu(){
+show_menu() {
     # Params for menu creation
     local Params=("$@")
     local TYPE=$1
@@ -19,10 +20,10 @@ show_menu(){
     if [ "$TYPE" = "gauge" ]; then
         MENU="Waiting to complete the installation"
     fi
-    
+
     # Get the rest parameters
     local ITEMS=("${Params[@]:2}")
-    
+
     lines=$(dialog \
         --clear \
         --insecure \
@@ -31,15 +32,15 @@ show_menu(){
         --$TYPE "$MENU" \
         15 60 8 \
         "${ITEMS[@]}" \
-    2>&1 >/dev/tty)
-    
+        2>&1 >/dev/tty)
+
     # Clear console contents
     clear
-    
+
     result=()
     while read -r line; do
         result+=("${line:-""}")
-    done <<< "${lines}"
+    done <<<"${lines}"
 }
 
 show_message() {
@@ -47,10 +48,10 @@ show_message() {
     clear
 }
 
-activate_ssl_with_certbot(){
+activate_ssl_with_certbot() {
     if [ $ENABLE_SSL = "True" ]; then
         sudo apt install nginx -y
-        cat <<EOF > ~/odoo
+        cat <<EOF >~/odoo
 server {
   listen 80;
 
@@ -124,26 +125,27 @@ server {
   }
 }
 EOF
-        
+
         sudo mv ~/odoo /etc/nginx/sites-available/$WEBSITE_NAME
         sudo ln -s /etc/nginx/sites-available/$WEBSITE_NAME /etc/nginx/sites-enabled/$WEBSITE_NAME
         sudo rm /etc/nginx/sites-enabled/default
         sudo service nginx reload
         sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_USER}.conf"
     fi
-    
-    if [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ]  && [ $WEBSITE_NAME != "_" ];then
+
+    if [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ] && [ $WEBSITE_NAME != "_" ]; then
         sudo apt-get update -y
         sudo apt install snapd -y
-        sudo snap install core; snap refresh core
+        sudo snap install core
+        snap refresh core
         sudo apt install certbot python3-certbot-nginx -y
         sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect
         sudo service nginx reload
     else
-        if $ADMIN_EMAIL = "odoo@example.com";then
+        if $ADMIN_EMAIL = "odoo@example.com"; then
             show_message "Certbot does not support registering odoo@example.com. You should use real e-mail address."
         fi
-        if $WEBSITE_NAME = "_";then
+        if $WEBSITE_NAME = "_"; then
             show_message "Website name is set as _. Cannot obtain SSL Certificate for _. You should use real website address."
         fi
     fi
@@ -151,12 +153,12 @@ EOF
 
 install_enterprise_dependencies() {
     source $OE_HOME/$OE_USER-venv/bin/activate
-    sudo pip3 install psycopg2-binary pdfminer.six
+    pip3 install psycopg2-binary pdfminer.six
     sudo ln -s /usr/bin/nodejs /usr/bin/node
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
     deactivate
-    
+
     if [ "$CRACKED" = "False" ]; then
         GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
         while [[ $GITHUB_RESPONSE == *"Authentication"* ]]; do
@@ -171,9 +173,10 @@ install_enterprise_dependencies() {
             GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
         done
     fi
-    
-    sudo pip3 install num2words ofxparse dbfread ebaysdk firebase_admin
-    sudo pip3 install pyopenssl==22.1.0
+
+    pip3 install pip --upgrade
+    pip3 install num2words ofxparse dbfread ebaysdk firebase_admin
+    pip3 install pyopenssl==22.1.0
     sudo npm install -g less
     sudo npm install -g less-plugin-clean-css
 }
@@ -197,13 +200,13 @@ print_specification() {
     fi
 }
 
-odoo_install(){
+odoo_install() {
     #--------------------------------------------------
     # Update Daemon configuration
     #--------------------------------------------------
-    sed "s/#\$nrconf{restart} = 'i'/\$nrconf{restart} = 'a'/" /etc/needrestart/needrestart.conf > ~/needrestart
+    sed "s/#\$nrconf{restart} = 'i'/\$nrconf{restart} = 'a'/" /etc/needrestart/needrestart.conf >~/needrestart
     sudo mv ~/needrestart /etc/needrestart/needrestart.conf
-    
+
     #--------------------------------------------------
     # Update Server
     #--------------------------------------------------
@@ -213,25 +216,25 @@ odoo_install(){
     sudo add-apt-repository "deb http://mirrors.kernel.org/ubuntu/ xenial main" -y
     sudo apt-get update
     sudo apt-get upgrade -y
-    sudo apt-get install libpq-dev -y
-    
+
     #--------------------------------------------------
     # Install Dependencies
     #--------------------------------------------------
+    sudo apt-get install libpq-dev -y
     sudo apt-get install python3 python3-pip python3-venv -y
     sudo apt-get install git python3-cffi build-essential wget python3-dev \
-    python3-venv python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev \
-    python3-setuptools node-less libpng-dev libjpeg-dev gdebi -y
-    
+        python3-venv python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev \
+        python3-setuptools node-less libpng-dev libjpeg-dev gdebi -y
+
     sudo apt-get install nodejs npm -y
     sudo npm install -g rtlcss
-    
+
     #--------------------------------------------------
     # Install PostgreSQL Server
     #--------------------------------------------------
     sudo apt-get install postgresql postgresql-server-dev-all -y
-    sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
-    
+    sudo su - postgres -c "createuser -s $OE_USER" 2>/dev/null || true
+
     #--------------------------------------------------
     # Install Wkhtmltopdf
     #--------------------------------------------------
@@ -245,60 +248,60 @@ odoo_install(){
         WKHTMLTOX_X64="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.$(lsb_release -c -s)_amd64.deb"
         WKHTMLTOX_X32="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.$(lsb_release -c -s)_i386.deb"
     fi
-    
-    if [ "`getconf LONG_BIT`" == "64" ];then
+
+    if [ "$(getconf LONG_BIT)" == "64" ]; then
         _url=$WKHTMLTOX_X64
     else
         _url=$WKHTMLTOX_X32
     fi
     sudo wget $_url
-    
+
     if [[ $(lsb_release -r -s) == "22.04" ]]; then
         # Ubuntu 22.04 LTS
         sudo apt install wkhtmltopdf -y
     else
         # For older versions of Ubuntu
-        sudo gdebi --n `basename $_url`
+        sudo gdebi --n $(basename $_url)
     fi
-    
+
     sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
     sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
-    
+
     sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos $OE_USER --group $OE_USER
     sudo adduser $OE_USER sudo
-    
+
     # Create Directory for log files
     sudo mkdir /var/log/odoo
     sudo chown $OE_USER:$OE_USER /var/log/odoo
-    
+
     #--------------------------------------------------
     # Install ODOO
     #--------------------------------------------------
     sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME/$OE_USER
-    
+
     # ---- Install ODdoo requirements ----
     python3 -m venv $OE_HOME/$OE_USER-venv
     source $OE_HOME/$OE_USER-venv/bin/activate
     pip3 install wheel
     pip3 install -r $OE_HOME/$OE_USER/requirements.txt
     deactivate
-    
+
     if [ $IS_ENTERPRISE = "True" ] || [ $CRACKED = "True" ]; then
         # Odoo Enterprise install!
         install_enterprise_dependencies
     fi
-    
+
     # ---- Create custom module directory ----
     sudo mkdir $OE_HOME/custom_module
     # ---- Setting permissions on home folder ----
     sudo chown $OE_USER:$OE_USER $OE_HOME
-    
+
     # ---- Create server config file ----
     sudo rm -f /etc/${OE_USER}.conf
     sudo touch /etc/${OE_USER}.conf
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_USER}.conf"
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_USER}.conf"
-    if [ $OE_VERSION > "11.0" ];then
+    if [ $OE_VERSION ] >"11.0"; then
         sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_USER}.conf"
     else
         sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> /etc/${OE_USER}.conf"
@@ -309,17 +312,17 @@ odoo_install(){
     else
         sudo su root -c "printf 'addons_path=${OE_HOME}/${OE_USER}/addons,${OE_HOME}/custom_module\n' >> /etc/${OE_USER}.conf"
     fi
-    
+
     sudo chown $OE_USER:$OE_USER /etc/${OE_USER}.conf
     sudo chmod 640 /etc/${OE_USER}.conf
-    
+
     #--------------------------------------------------
     # Enable ssl with certbot
     #--------------------------------------------------
     activate_ssl_with_certbot
-    
+
     # ---- Create Odoo Systemd Unit file ----
-    cat <<EOF > ~/odoo
+    cat <<EOF >~/odoo
 [Unit]
     Description=$OE_USER
     Requires=postgresql.service
@@ -342,16 +345,16 @@ EOF
     sudo systemctl daemon-reload
     sudo systemctl enable $OE_USER
     sudo systemctl start $OE_USER
-    
+
     show_message "Installation completed"
-    
+
     echo -e "* Starting Odoo Service"
     sudo su root -c "service $OE_USER start"
     echo "-----------------------------------------------------------"
     echo "Done! The Odoo server is up and running."
     print_specification | tee $OE_HOME/server.info
     echo "-----------------------------------------------------------"
-    
+
     echo "Server Specifications saved to $OE_HOME/server.info"
 }
 
@@ -407,7 +410,7 @@ if [ $ODOO_INSTALL = "True" ]; then
     )
     show_menu "menu" "Odoo Version" "${OPTIONS[@]}"
     OE_VERSION="$result"
-    
+
     # Mixedform
     OPTIONS=(
         "User/Group:" 1 1 "$OE_USER" 1 25 35 0 0
@@ -421,14 +424,14 @@ if [ $ODOO_INSTALL = "True" ]; then
             "Website:" 6 1 "example.com" 6 25 35 0 0
         )
     fi
-    
+
     if [ $IS_ENTERPRISE = "True" ]; then
         OPTIONS+=(
             "Github username:" 7 1 "" 7 25 35 0 0
             "Github password:" 8 1 "" 8 25 35 0 1
         )
     fi
-    
+
     show_menu "mixedform" "Odoo Configurations" "${OPTIONS[@]}"
     OE_USER="${result[0]:="$OE_USER"}"
     OE_SUPERADMIN="${result[1]:="$OE_SUPERADMIN"}"
@@ -438,8 +441,8 @@ if [ $ODOO_INSTALL = "True" ]; then
     WEBSITE_NAME="${result[5]:="${WEBSITE_NAME}"}"
     GITHUB_USERNAME="${result[6]:="${GITHUB_USERNAME}"}"
     GITHUB_PASSWORD="${result[7]:="${GITHUB_PASSWORD}"}"
-    
+
     OE_HOME="/$OE_USER"
-    
+
     odoo_install
 fi
