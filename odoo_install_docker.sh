@@ -202,6 +202,10 @@ odoo_install() {
     sudo rm -f $OE_HOME/config/odoo.conf
     sudo touch $OE_HOME/config/odoo.conf
 
+    if [ ${#OE_SUPERADMIN} -le 1 ]; then
+        OE_SUPERADMIN=`openssl rand -base64 12`
+    fi
+
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> $OE_HOME/config/odoo.conf"
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> $OE_HOME/config/odoo.conf"
     if [ $OE_VERSION ] >"11.0"; then
@@ -251,10 +255,6 @@ EOF
      #--------------------------------------------------
     # Env settings for docker service
     #--------------------------------------------------
-    if [ ${#OE_SUPERADMIN} -le 1 ]; then
-        OE_SUPERADMIN=`openssl rand -base64 12`
-    fi
-
     cat <<EOF > ~/env
 # postgresql environment variables
 POSTGRES_DB=postgres
