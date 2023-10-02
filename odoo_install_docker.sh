@@ -213,7 +213,6 @@ odoo_install() {
     else
         sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> $OE_HOME/config/odoo.conf"
     fi
-    sudo su root -c "printf 'logfile = /var/log/odoo/odoo.log\n' >> $OE_HOME/config/odoo.conf"
     sudo su root -c "printf 'addons_path=/mnt/extra-addons\n' >> $OE_HOME/config/odoo.conf"
 
     #--------------------------------------------------
