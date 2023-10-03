@@ -243,7 +243,7 @@ services:
     image: postgres:15
     env_file: .env
     volumes:
-      - db:/var/lib/pgsql/data/pgdata
+      - db:/var/lib/postgresql/data
     restart: always
 volumes:
   data:
@@ -259,7 +259,7 @@ EOF
 POSTGRES_DB=postgres
 POSTGRES_PASSWORD=$OE_SUPERADMIN
 POSTGRES_USER=$OE_USER
-PGDATA=/var/lib/postgresql/data/pgdata
+PGDATA=/var/lib/postgresql/data
 
 # odoo environment variables
 HOST=postgres

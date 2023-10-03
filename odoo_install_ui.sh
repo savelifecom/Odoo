@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# install dialog package
+# install dialog package - update
 sudo apt-get update
 sudo apt-get install dialog -y
 
@@ -157,7 +157,6 @@ install_enterprise_dependencies() {
     sudo ln -s /usr/bin/nodejs /usr/bin/node
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
-    deactivate
 
     if [ "$CRACKED" = "False" ]; then
         GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
@@ -177,6 +176,8 @@ install_enterprise_dependencies() {
     pip3 install pip --upgrade
     pip3 install num2words ofxparse dbfread ebaysdk firebase_admin
     pip3 install pyopenssl==22.1.0
+    deactivate
+    
     sudo npm install -g less
     sudo npm install -g less-plugin-clean-css
 }
@@ -281,6 +282,7 @@ odoo_install() {
 
     # ---- Install ODdoo requirements ----
     python3 -m venv $OE_HOME/$OE_USER-venv
+    sudo chown -R $OE_USER:$OE_USER $OE_HOME/$OE_USER-venv
     source $OE_HOME/$OE_USER-venv/bin/activate
     pip3 install wheel
     pip3 install -r $OE_HOME/$OE_USER/requirements.txt
@@ -307,7 +309,7 @@ odoo_install() {
         sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> /etc/${OE_USER}.conf"
     fi
     sudo su root -c "printf 'logfile = /var/log/odoo/${OE_USER}.log\n' >> /etc/${OE_USER}.conf"
-    if [ $IS_ENTERPRISE = "True" ]; then
+    if [ $IS_ENTERPRISE = "True" ] || [ $CRACKED = "True" ]; then
         sudo su root -c "printf 'addons_path=${OE_HOME}/enterprise/addons,${OE_HOME}/${OE_USER}/addons,${OE_HOME}/custom_module\n' >> /etc/${OE_USER}.conf"
     else
         sudo su root -c "printf 'addons_path=${OE_HOME}/${OE_USER}/addons,${OE_HOME}/custom_module\n' >> /etc/${OE_USER}.conf"
